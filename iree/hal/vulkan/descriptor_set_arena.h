@@ -41,7 +41,7 @@ class DescriptorSetArena final {
   Status BindDescriptorSet(VkCommandBuffer command_buffer,
                            PipelineExecutableLayout* executable_layout,
                            int32_t set,
-                           absl::Span<const DescriptorSet::Binding> bindings);
+                           absl::Span<const iree_hal_descriptor_set_binding_t> bindings);
 
   // Flushes all pending writes to descriptor sets allocated from the arena and
   // returns a group that - when dropped - will release the descriptor sets
@@ -55,7 +55,7 @@ class DescriptorSetArena final {
   Status PushDescriptorSet(VkCommandBuffer command_buffer,
                            PipelineExecutableLayout* executable_layout,
                            int32_t set,
-                           absl::Span<const DescriptorSet::Binding> bindings);
+                           absl::Span<const iree_hal_descriptor_set_binding_t> bindings);
 
   ref_ptr<VkDeviceHandle> logical_device_;
   ref_ptr<DescriptorPoolCache> descriptor_pool_cache_;
