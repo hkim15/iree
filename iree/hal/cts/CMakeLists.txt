@@ -23,7 +23,7 @@ iree_cc_library(
     iree::tools::sanitizer_suppressions.txt
   DEPS
     iree::base::status
-    iree::hal
+    iree::hal::cc
     iree::hal::api
     iree::hal::testing::driver_registry
     iree::testing::gtest

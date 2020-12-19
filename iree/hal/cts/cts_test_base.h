@@ -25,7 +25,7 @@
 #include "iree/testing/status_matchers.h"
 
 // TODO(3934): rebase this all on the C API.
-#include "iree/hal/driver.h"
+#include "iree/hal/cc/driver.h"
 
 namespace iree {
 namespace hal {

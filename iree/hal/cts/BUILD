@@ -30,7 +30,7 @@ cc_library(
     ],
     deps = [
         "//iree/base:status",
-        "//iree/hal",
+        "//iree/hal/cc",
         "//iree/hal:api",
         "//iree/hal/testing:driver_registry",
         "//iree/testing:gtest",

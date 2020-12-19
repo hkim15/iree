@@ -19,8 +19,8 @@
 #include <memory>
 
 #include "iree/base/status.h"
-#include "iree/hal/allocator.h"
-#include "iree/hal/buffer.h"
+#include "iree/hal/cc/allocator.h"
+#include "iree/hal/cc/buffer.h"
 
 namespace iree {
 namespace hal {
@@ -29,10 +29,11 @@ namespace host {
 // An allocator implementation that allocates buffers from host memory.
 // This can be used for drivers that do not have a memory space of their own.
 //
-// Buffers allocated will have be IREE_HAL_MEMORY_TYPE_HOST_LOCAL | kDeviceVisible as
-// the 'device' in the case of a host-local queue *is* the host. To keep code
-// written initially for a host-local queue working when other queues are used
-// the allocator only works with buffers that are kDeviceVisible.
+// Buffers allocated will have be IREE_HAL_MEMORY_TYPE_HOST_LOCAL |
+// kDeviceVisible as the 'device' in the case of a host-local queue *is* the
+// host. To keep code written initially for a host-local queue working when
+// other queues are used the allocator only works with buffers that are
+// kDeviceVisible.
 class HostLocalAllocator : public Allocator {
  public:
   HostLocalAllocator();
