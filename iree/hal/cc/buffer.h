@@ -72,7 +72,6 @@ template <typename T>
 class MappedMemory;
 
 std::string MemoryTypeString(iree_hal_memory_type_t memory_type);
-std::string MemoryAccessString(iree_hal_memory_access_t memory_access);
 std::string BufferUsageString(iree_hal_buffer_usage_t buffer_usage);
 
 // A memory buffer.

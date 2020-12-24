@@ -28,17 +28,6 @@
 namespace iree {
 namespace hal {
 
-std::string CommandBufferModeString(iree_hal_command_buffer_mode_t mode);
-inline std::string CommandCategoryString(
-    iree_hal_command_category_t categories) {
-  return "TODO";
-  // return FormatBitfieldValue(
-  //     categories, {
-  //                     {IREE_HAL_COMMAND_CATEGORY_TRANSFER, "kTransfer"},
-  //                     {IREE_HAL_COMMAND_CATEGORY_DISPATCH, "kDispatch"},
-  //                 });
-}
-
 // Asynchronous command buffer recording interface.
 // Commands are recorded by the implementation for later submission to command
 // queues.
