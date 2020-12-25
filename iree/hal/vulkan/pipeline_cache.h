@@ -38,7 +38,7 @@ class PipelineCache final : public ExecutableCache {
     return logical_device_->syms();
   }
 
-  bool CanPrepareFormat(ExecutableFormat format) const override;
+  bool CanPrepareFormat(iree_hal_executable_format_t format) const override;
 
   StatusOr<ref_ptr<Executable>> PrepareExecutable(
       ExecutableLayout* executable_layout,

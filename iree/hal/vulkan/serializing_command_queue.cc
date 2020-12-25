@@ -150,7 +150,7 @@ void PrepareSubmitInfo(
   for (size_t i = 0, e = command_buffers.size(); i < e; ++i) {
     const auto& command_buffer = command_buffers[i];
     auto* direct_command_buffer =
-        static_cast<DirectCommandBuffer*>(command_buffer->impl());
+        static_cast<DirectCommandBuffer*>(command_buffer);
     command_buffer_handles[i] = direct_command_buffer->handle();
   }
 

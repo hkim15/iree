@@ -78,22 +78,9 @@ class VmaAllocator final : public Allocator {
                         iree_hal_buffer_usage_t buffer_usage,
                         iree_hal_buffer_usage_t intended_usage) const override;
 
-  bool CanAllocate(iree_hal_memory_type_t memory_type,
-                   iree_hal_buffer_usage_t buffer_usage,
-                   size_t allocation_size) const override;
-
-  Status MakeCompatible(iree_hal_memory_type_t* memory_type,
-                        iree_hal_buffer_usage_t* buffer_usage) const override;
-
   StatusOr<ref_ptr<Buffer>> Allocate(iree_hal_memory_type_t memory_type,
                                      iree_hal_buffer_usage_t buffer_usage,
                                      size_t allocation_size) override;
-
-  StatusOr<ref_ptr<Buffer>> WrapMutable(iree_hal_memory_type_t memory_type,
-                                        iree_hal_memory_access_t allowed_access,
-                                        iree_hal_buffer_usage_t buffer_usage,
-                                        void* data,
-                                        size_t data_length) override;
 
  private:
   VmaAllocator(VkPhysicalDevice physical_device,

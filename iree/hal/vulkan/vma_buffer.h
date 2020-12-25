@@ -33,18 +33,16 @@ class VmaAllocator;
 class VmaBuffer final : public Buffer {
  public:
   VmaBuffer(VmaAllocator* allocator, iree_hal_memory_type_t memory_type,
-            iree_hal_memory_access_t allowed_access, iree_hal_buffer_usage_t usage,
-            iree_device_size_t allocation_size, iree_device_size_t byte_offset,
-            iree_device_size_t byte_length, VkBuffer buffer,
-            VmaAllocation allocation, VmaAllocationInfo allocation_info);
+            iree_hal_memory_access_t allowed_access,
+            iree_hal_buffer_usage_t usage, iree_device_size_t allocation_size,
+            iree_device_size_t byte_offset, iree_device_size_t byte_length,
+            VkBuffer buffer, VmaAllocation allocation,
+            VmaAllocationInfo allocation_info);
   ~VmaBuffer() override;
 
   VkBuffer handle() const { return buffer_; }
   VmaAllocation allocation() const { return allocation_; }
   const VmaAllocationInfo& allocation_info() const { return allocation_info_; }
-
-  // Exposed so that VmaAllocator can reset access after initial mapping.
-  using Buffer::set_allowed_access;
 
  private:
   Status FillImpl(iree_device_size_t byte_offset,

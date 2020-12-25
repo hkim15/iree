@@ -81,21 +81,11 @@ class VulkanDevice final : public Device {
 
   ~VulkanDevice() override;
 
-  std::string DebugString() const override;
-
   const ref_ptr<DynamicSymbols>& syms() const {
     return logical_device_->syms();
   }
 
   Allocator* allocator() const override { return allocator_.get(); }
-
-  absl::Span<CommandQueue*> dispatch_queues() const override {
-    return absl::MakeSpan(dispatch_queues_);
-  }
-
-  absl::Span<CommandQueue*> transfer_queues() const override {
-    return absl::MakeSpan(transfer_queues_);
-  }
 
   ref_ptr<ExecutableCache> CreateExecutableCache() override;
 

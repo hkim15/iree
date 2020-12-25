@@ -24,27 +24,16 @@ package(
 
 cc_library(
     name = "cc",
-    srcs = [
-        "buffer.cc",
-    ],
     hdrs = [
         "allocator.h",
         "buffer.h",
         "command_buffer.h",
         "command_queue.h",
         "debug_capture_manager.h",
-        "descriptor_set.h",
-        "descriptor_set_layout.h",
         "device.h",
         "device_info.h",
         "driver.h",
-        "event.h",
-        "executable.h",
-        "executable_cache.h",
-        "executable_format.h",
-        "executable_layout.h",
         "resource.h",
-        "semaphore.h",
     ],
     deps = [
         "//iree/base:core_headers",
@@ -54,21 +43,6 @@ cc_library(
         "//iree/base:time",
         "//iree/base:tracing",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-    ],
-)
-
-cc_test(
-    name = "buffer_test",
-    srcs = [
-        "buffer_mapping_test.cc",
-        "buffer_test.cc",
-    ],
-    deps = [
-        ":cc",
-        "//iree/base:status",
-        "//iree/testing:gtest",
-        "//iree/testing:gtest_main",
         "@com_google_absl//absl/types:span",
     ],
 )

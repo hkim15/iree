@@ -36,14 +36,6 @@ class MetalBuffer final : public Buffer {
       iree_device_size_t byte_length, id<MTLBuffer> buffer,
       id<MTLCommandQueue> transfer_queue);
 
-  // Creates a MetalBuffer instance without retaining the given id<MTLBuffer>.
-  static StatusOr<ref_ptr<MetalBuffer>> CreateUnretained(
-      MetalDirectAllocator* allocator, iree_hal_memory_type_t memory_type,
-      iree_hal_memory_access_t allowed_access, iree_hal_buffer_usage_t usage,
-      iree_device_size_t allocation_size, iree_device_size_t byte_offset,
-      iree_device_size_t byte_length, id<MTLBuffer> buffer,
-      id<MTLCommandQueue> transfer_queue);
-
   ~MetalBuffer() override;
 
   id<MTLBuffer> handle() const { return metal_handle_; }

@@ -23,30 +23,12 @@
 namespace iree {
 namespace hal {
 
-// Abstract resource type whose lifetime is managed by a ResourceSet.
-// Used mostly just to get a virtual dtor, though we could add nicer logging
-// by allowing resources to capture debug names, stack traces of creation, etc.
 class Resource : public RefObject<Resource> {
  public:
   virtual ~Resource() = default;
-
-  // Returns a longer debug string describing the resource and its attributes.
-  virtual std::string DebugString() const { return DebugStringShort(); }
-  // Returns a short debug string describing the resource.
-  virtual std::string DebugStringShort() const {
-    // TODO(benvanik): remove this when all resource types have custom logic.
-    return std::string("resource_") + std::to_string(static_cast<uint64_t>(
-                                          reinterpret_cast<uintptr_t>(this)));
-  }
 };
 
 }  // namespace hal
 }  // namespace iree
-
-inline std::ostream& operator<<(std::ostream& stream,
-                                const iree::hal::Resource& resource) {
-  stream << resource.DebugStringShort();
-  return stream;
-}
 
 #endif  // IREE_HAL_CC_RESOURCE_H_

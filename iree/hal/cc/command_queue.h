@@ -22,74 +22,22 @@
 #include "iree/base/status.h"
 #include "iree/base/time.h"
 #include "iree/hal/cc/command_buffer.h"
-#include "iree/hal/cc/semaphore.h"
 
 namespace iree {
 namespace hal {
 
-// A batch of command buffers with synchronization information for submission.
-struct SubmissionBatch {
-  // A set of semaphores that must have their payload values meet or exceed the
-  // specified values prior to any command buffer within this batch executing.
-  absl::Span<const SemaphoreValue> wait_semaphores;
-
-  // Command buffers that will execute in this batch.
-  // The command buffers will begin execution in order but may complete out of
-  // order.
-  absl::Span<CommandBuffer* const> command_buffers;
-
-  // Semaphores to signal after execution of all command buffers complete.
-  // Semaphore playloads will be set to the maximum of the specified payload or
-  // their current payload.
-  absl::Span<const SemaphoreValue> signal_semaphores;
-};
-
-// Asynchronous command execution queue.
-//
-// CommandQueues may capture device status at Semaphore barriers, including
-// information about device state such as thermal throttling. This information
-// is a snapshot of the state at the time the semaphore was signaled and not
-// necessarily live at the time of the application query.
-//
-// Command queues are thread-safe and submissions may occur from multiple
-// threads.
 class CommandQueue {
  public:
   virtual ~CommandQueue() = default;
 
-  // Name of the queue used for logging purposes.
-  // Try to keep at 4 characters total for prettier logging.
-  const std::string& name() const { return name_; }
-
-  // Capabilities of the command queue.
-  iree_hal_command_category_t supported_categories() const {
-    return supported_categories_;
-  }
-
-  // Whether this queue may be used for transfer commands.
-  bool can_transfer() const {
-    return iree_all_bits_set(supported_categories_,
-                             IREE_HAL_COMMAND_CATEGORY_TRANSFER);
-  }
-
-  // Whether this queue may be used for dispatch commands.
   bool can_dispatch() const {
     return iree_all_bits_set(supported_categories_,
                              IREE_HAL_COMMAND_CATEGORY_DISPATCH);
   }
 
-  // Submits one or more command batches for execution on the queue.
-  virtual Status Submit(absl::Span<const SubmissionBatch> batches) = 0;
-  inline Status Submit(const SubmissionBatch& batch) {
-    return Submit(absl::MakeConstSpan(&batch, 1));
-  }
+  virtual Status Submit(
+      absl::Span<const iree_hal_submission_batch_t> batches) = 0;
 
-  // Blocks until all outstanding requests have been completed.
-  // This is equivalent to having waited on all outstanding semaphores.
-  // Implicitly calls Flush to ensure delayed requests are scheduled.
-  //
-  // If the command queue has encountered an error during submission at any
-  // point it will be returned here (repeatedly).
   virtual Status WaitIdle(Time deadline_ns) = 0;
   inline Status WaitIdle(Duration timeout_ns) {
     return WaitIdle(RelativeTimeoutToDeadlineNanos(timeout_ns));

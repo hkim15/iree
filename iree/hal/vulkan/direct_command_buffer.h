@@ -48,8 +48,6 @@ class DirectCommandBuffer final : public CommandBuffer {
 
   VkCommandBuffer handle() const { return command_buffer_; }
 
-  bool is_recording() const override { return is_recording_; }
-
   Status Begin() override;
   Status End() override;
 

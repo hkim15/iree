@@ -23,20 +23,10 @@ iree_cc_library(
     "command_buffer.h"
     "command_queue.h"
     "debug_capture_manager.h"
-    "descriptor_set.h"
-    "descriptor_set_layout.h"
     "device.h"
     "device_info.h"
     "driver.h"
-    "event.h"
-    "executable.h"
-    "executable_cache.h"
-    "executable_format.h"
-    "executable_layout.h"
     "resource.h"
-    "semaphore.h"
-  SRCS
-    "buffer.cc"
   DEPS
     absl::span
     absl::strings
@@ -47,18 +37,4 @@ iree_cc_library(
     iree::base::time
     iree::base::tracing
   PUBLIC
-)
-
-iree_cc_test(
-  NAME
-    buffer_test
-  SRCS
-    "buffer_mapping_test.cc"
-    "buffer_test.cc"
-  DEPS
-    ::cc
-    absl::span
-    iree::base::status
-    iree::testing::gtest
-    iree::testing::gtest_main
 )

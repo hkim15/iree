@@ -107,20 +107,6 @@ bool VmaAllocator::CanUseBufferLike(
   return source_allocator == this;
 }
 
-bool VmaAllocator::CanAllocate(iree_hal_memory_type_t memory_type,
-                               iree_hal_buffer_usage_t buffer_usage,
-                               size_t allocation_size) const {
-  // TODO(benvnik): ensure there is a memory type that can satisfy the request.
-  return true;
-}
-
-Status VmaAllocator::MakeCompatible(
-    iree_hal_memory_type_t* memory_type,
-    iree_hal_buffer_usage_t* buffer_usage) const {
-  // TODO(benvanik): mutate to match supported memory types.
-  return OkStatus();
-}
-
 StatusOr<ref_ptr<VmaBuffer>> VmaAllocator::AllocateInternal(
     iree_hal_memory_type_t memory_type, iree_hal_buffer_usage_t buffer_usage,
     iree_hal_memory_access_t allowed_access, size_t allocation_size,
@@ -213,15 +199,6 @@ StatusOr<ref_ptr<Buffer>> VmaAllocator::Allocate(
   IREE_TRACE_SCOPE0("VmaAllocator::Allocate");
   return AllocateInternal(memory_type, buffer_usage, IREE_HAL_MEMORY_ACCESS_ALL,
                           allocation_size, /*flags=*/0);
-}
-
-StatusOr<ref_ptr<Buffer>> VmaAllocator::WrapMutable(
-    iree_hal_memory_type_t memory_type, iree_hal_memory_access_t allowed_access,
-    iree_hal_buffer_usage_t buffer_usage, void* data, size_t data_length) {
-  IREE_TRACE_SCOPE0("VmaAllocator::WrapMutable");
-  // TODO(benvanik): import memory.
-  return UnimplementedErrorBuilder(IREE_LOC)
-         << "Wrapping host memory is not yet implemented";
 }
 
 }  // namespace vulkan

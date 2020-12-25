@@ -16,19 +16,23 @@
 
 #include "iree/base/status.h"
 #include "iree/base/tracing.h"
-#include "iree/hal/cc/executable_format.h"
+#include "iree/hal/api.h"
 #include "iree/hal/vulkan/status_util.h"
 
 namespace iree {
 namespace hal {
 namespace vulkan {
 
+static const iree_hal_executable_format_t kExecutableFormatSpirV =
+    iree_hal_make_executable_format("SPVE");
+
 PipelineCache::PipelineCache(ref_ptr<VkDeviceHandle> logical_device)
     : logical_device_(std::move(logical_device)) {}
 
 PipelineCache::~PipelineCache() = default;
 
-bool PipelineCache::CanPrepareFormat(ExecutableFormat format) const {
+bool PipelineCache::CanPrepareFormat(
+    iree_hal_executable_format_t format) const {
   return format == kExecutableFormatSpirV;
 }
 

@@ -81,7 +81,7 @@ Status DirectCommandQueue::TranslateBatchInfo(
   for (int i = 0; i < batch.command_buffers.size(); ++i) {
     const auto& command_buffer = batch.command_buffers[i];
     auto* direct_command_buffer =
-        static_cast<DirectCommandBuffer*>(command_buffer->impl());
+        static_cast<DirectCommandBuffer*>(command_buffer);
     command_buffer_handles[i] = direct_command_buffer->handle();
   }
 

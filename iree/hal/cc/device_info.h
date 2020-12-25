@@ -45,32 +45,10 @@ class DeviceInfo {
   // Human-friendly device name.
   const std::string& name() const { return name_; }
 
-  // Features supported by the device.
-  iree_hal_device_feature_t supported_features() const {
-    return supported_features_;
-  }
-
   // Opaque handle used by drivers to correlate this device with their internal
   // listing. This handle will not be valid across driver instances or outside
   // of the current process.
   iree_hal_device_id_t device_id() const { return device_id_; }
-
-  // Returns a debug string describing the device information.
-  std::string DebugString() const {
-    std::string features = "TODO";
-    // FormatBitfieldValue(
-    //     supported_features_,
-    //     {
-    //         {IREE_HAL_DEVICE_FEATURE_SUPPORTS_DEBUGGING, "kDebugging"},
-    //         {IREE_HAL_DEVICE_FEATURE_SUPPORTS_COVERAGE, "kCoverage"},
-    //         {IREE_HAL_DEVICE_FEATURE_SUPPORTS_PROFILING, "kProfiling"},
-    //     });
-
-    return absl::StrCat("[DeviceInfo]",                              //
-                        "\n  Name: ", name_,                         //
-                        "\n  Supported features: [", features, "]",  //
-                        "\n  Device ID: ", device_id_);
-  }
 
  private:
   const std::string id_;

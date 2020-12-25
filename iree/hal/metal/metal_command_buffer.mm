@@ -299,7 +299,6 @@ Status MetalCommandBuffer::Dispatch(Executable* executable, int32_t entry_point,
   // TODO(antiagainst): only update the PSO for the current executable.
   for (const auto& pso_kv : pipeline_state_objects_) {
     const auto* pipeline_layout = static_cast<MetalPipelineArgumentBufferLayout*>(pso_kv.first);
-    IREE_DVLOG(3) << "Current pipeline layout: " << pipeline_layout->DebugString();
 
     const auto& pso = pso_kv.second;
     if (pso.push_states.size() > 1) {
@@ -345,7 +344,6 @@ Status MetalCommandBuffer::Dispatch(Executable* executable, int32_t entry_point,
       [argument_encoder setArgumentBuffer:argument_buffer offset:0];
 
       for (const auto& resource_binding : push_state.resource_bindings) {
-        IREE_DVLOG(3) << "  Resource @[" << resource_binding.DebugStringShort() << "]";
 
         if (resource_binding.length != IREE_WHOLE_BUFFER &&
             resource_binding.length != resource_binding.buffer->allocation_size()) {

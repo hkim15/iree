@@ -40,8 +40,6 @@ class MetalCommandBuffer final : public CommandBuffer {
 
   id<MTLCommandBuffer> handle() const { return metal_handle_; }
 
-  bool is_recording() const override { return is_recording_; }
-
   Status Begin() override;
   Status End() override;
 

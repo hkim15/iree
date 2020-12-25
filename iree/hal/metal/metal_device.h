@@ -43,17 +43,7 @@ class MetalDevice final : public Device {
 
   ~MetalDevice() override;
 
-  std::string DebugString() const override;
-
   Allocator* allocator() const override { return allocator_.get(); }
-
-  absl::Span<CommandQueue*> dispatch_queues() const override {
-    return absl::MakeSpan(&common_queue_, 1);
-  }
-
-  absl::Span<CommandQueue*> transfer_queues() const override {
-    return absl::MakeSpan(&common_queue_, 1);
-  }
 
   ref_ptr<ExecutableCache> CreateExecutableCache() override;
 

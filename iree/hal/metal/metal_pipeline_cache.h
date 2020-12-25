@@ -30,7 +30,7 @@ class MetalPipelineCache final : public ExecutableCache {
   explicit MetalPipelineCache(id<MTLDevice> device);
   ~MetalPipelineCache() override;
 
-  bool CanPrepareFormat(ExecutableFormat format) const override;
+  bool CanPrepareFormat(iree_hal_executable_format_t format) const override;
 
   StatusOr<ref_ptr<Executable>> PrepareExecutable(
       ExecutableLayout* executable_layout,

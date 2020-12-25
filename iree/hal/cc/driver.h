@@ -32,28 +32,16 @@ class Driver : public RefObject<Driver> {
  public:
   virtual ~Driver() = default;
 
-  // Driver name used during registration.
-  const std::string& name() const { return name_; }
-
-  // TODO(benvanik): info/query (version number, etc).
-
-  // Enumerates devices available for creation from the driver.
-  // This may fail if the driver is in an invalid state but otherwise will
-  // return an empty list if no devices are available.
   virtual StatusOr<std::vector<DeviceInfo>> EnumerateAvailableDevices() = 0;
 
-  // Creates the driver-defined 'default' device.
-  // This may simply be the first device enumerated.
   virtual StatusOr<ref_ptr<Device>> CreateDefaultDevice() = 0;
 
-  // Creates a device as queried with the given |driver_handle|.
   virtual StatusOr<ref_ptr<Device>> CreateDevice(
       iree_hal_device_id_t device_id) = 0;
   StatusOr<ref_ptr<Device>> CreateDevice(const DeviceInfo& device_info) {
     return CreateDevice(device_info.device_id());
   }
 
-  // Gets the capture manager for this driver, if one exists.
   virtual DebugCaptureManager* debug_capture_manager() { return nullptr; }
 
  protected:

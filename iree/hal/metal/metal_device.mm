@@ -83,13 +83,6 @@ MetalDevice::~MetalDevice() {
   [metal_handle_ release];
 }
 
-std::string MetalDevice::DebugString() const {
-  return absl::StrCat(Device::DebugString(),         //
-                      "\n[MetalDevice]",             //
-                      "\n    - Dispatch Queues: 1",  //
-                      "\n    - Transfer Queues: 1");
-}
-
 ref_ptr<ExecutableCache> MetalDevice::CreateExecutableCache() {
   IREE_TRACE_SCOPE0("MetalDevice::CreateExecutableCache");
   return make_ref<MetalPipelineCache>(metal_handle_);
