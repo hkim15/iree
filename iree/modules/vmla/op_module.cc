@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "iree/hal/vmla/op_module.h"
+#include "iree/modules/vmla/op_module.h"
 
 #include <cstdint>
 
 #include "absl/types/span.h"
 #include "iree/base/tracing.h"
-#include "iree/hal/vmla/op_kernels.h"
+#include "iree/modules/vmla/op_kernels.h"
 #include "iree/vm/module_abi_packing.h"
 
 //===----------------------------------------------------------------------===//
