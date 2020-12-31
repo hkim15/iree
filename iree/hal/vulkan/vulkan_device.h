@@ -29,7 +29,6 @@
 #include "iree/hal/cc/debug_capture_manager.h"
 #include "iree/hal/cc/device.h"
 #include "iree/hal/cc/driver.h"
-#include "iree/hal/cc/semaphore.h"
 #include "iree/hal/vulkan/descriptor_pool_cache.h"
 #include "iree/hal/vulkan/dynamic_symbols.h"
 #include "iree/hal/vulkan/emulated_timeline_semaphore.h"
@@ -87,34 +86,40 @@ class VulkanDevice final : public Device {
 
   Allocator* allocator() const override { return allocator_.get(); }
 
-  ref_ptr<ExecutableCache> CreateExecutableCache() override;
+  Status CreateExecutableCache(
+      iree_string_view_t identifier,
+      iree_hal_executable_cache_t** out_executable_cache) override;
 
-  StatusOr<ref_ptr<DescriptorSetLayout>> CreateDescriptorSetLayout(
+  Status CreateDescriptorSetLayout(
       iree_hal_descriptor_set_layout_usage_type_t usage_type,
-      absl::Span<const iree_hal_descriptor_set_layout_binding_t> bindings)
-      override;
+      absl::Span<const iree_hal_descriptor_set_layout_binding_t> bindings,
+      iree_hal_descriptor_set_layout_t** out_descriptor_set_layout) override;
 
-  StatusOr<ref_ptr<ExecutableLayout>> CreateExecutableLayout(
-      absl::Span<DescriptorSetLayout* const> set_layouts,
-      size_t push_constants) override;
+  Status CreateExecutableLayout(
+      absl::Span<iree_hal_descriptor_set_layout_t*> set_layouts,
+      size_t push_constants,
+      iree_hal_executable_layout_t** out_executable_layout) override;
 
-  StatusOr<ref_ptr<DescriptorSet>> CreateDescriptorSet(
-      DescriptorSetLayout* set_layout,
-      absl::Span<const iree_hal_descriptor_set_binding_t> bindings) override;
+  Status CreateDescriptorSet(
+      iree_hal_descriptor_set_layout_t* set_layout,
+      absl::Span<const iree_hal_descriptor_set_binding_t> bindings,
+      iree_hal_descriptor_set_t** out_descriptor_set) override;
 
   StatusOr<ref_ptr<CommandBuffer>> CreateCommandBuffer(
       iree_hal_command_buffer_mode_t mode,
       iree_hal_command_category_t command_categories) override;
 
-  StatusOr<ref_ptr<Event>> CreateEvent() override;
+  Status CreateEvent(iree_hal_event_t** out_event) override;
 
-  StatusOr<ref_ptr<Semaphore>> CreateSemaphore(uint64_t initial_value) override;
-  Status WaitAllSemaphores(absl::Span<const SemaphoreValue> semaphores,
-                           Time deadline_ns) override;
-  StatusOr<int> WaitAnySemaphore(absl::Span<const SemaphoreValue> semaphores,
-                                 Time deadline_ns) override;
+  Status CreateSemaphore(uint64_t initial_value,
+                         iree_hal_semaphore_t** out_semaphore) override;
+  Status WaitAllSemaphores(const iree_hal_semaphore_list_t* semaphore_list,
+                           iree_time_t deadline_ns) override;
+  StatusOr<int> WaitAnySemaphore(
+      const iree_hal_semaphore_list_t* semaphore_list,
+      iree_time_t deadline_ns) override;
 
-  Status WaitIdle(Time deadline_ns) override;
+  Status WaitIdle(iree_time_t deadline_ns) override;
 
  private:
   VulkanDevice(
@@ -128,8 +133,9 @@ class VulkanDevice final : public Device {
       ref_ptr<TimePointFencePool> fence_pool,
       DebugCaptureManager* debug_capture_manager);
 
-  Status WaitSemaphores(absl::Span<const SemaphoreValue> semaphores,
-                        Time deadline_ns, VkSemaphoreWaitFlags wait_flags);
+  Status WaitSemaphores(const iree_hal_semaphore_list_t* semaphore_list,
+                        iree_time_t deadline_ns,
+                        VkSemaphoreWaitFlags wait_flags);
 
   bool emulating_timeline_semaphores() const {
     return semaphore_pool_ != nullptr;

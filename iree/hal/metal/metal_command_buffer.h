@@ -49,12 +49,13 @@ class MetalCommandBuffer final : public CommandBuffer {
       absl::Span<const iree_hal_memory_barrier_t> memory_barriers,
       absl::Span<const iree_hal_buffer_barrier_t> buffer_barriers) override;
 
-  Status SignalEvent(Event* event,
+  Status SignalEvent(iree_hal_event_t* event,
                      iree_hal_execution_stage_t source_stage_mask) override;
-  Status ResetEvent(Event* event,
+  Status ResetEvent(iree_hal_event_t* event,
                     iree_hal_execution_stage_t source_stage_mask) override;
   Status WaitEvents(
-      absl::Span<Event*> events, iree_hal_execution_stage_t source_stage_mask,
+      absl::Span<iree_hal_event_t*> events,
+      iree_hal_execution_stage_t source_stage_mask,
       iree_hal_execution_stage_t target_stage_mask,
       absl::Span<const iree_hal_memory_barrier_t> memory_barriers,
       absl::Span<const iree_hal_buffer_barrier_t> buffer_barriers) override;
@@ -71,21 +72,22 @@ class MetalCommandBuffer final : public CommandBuffer {
                     Buffer* target_buffer, iree_device_size_t target_offset,
                     iree_device_size_t length) override;
 
-  Status PushConstants(ExecutableLayout* executable_layout, size_t offset,
+  Status PushConstants(iree_hal_executable_layout_t* executable_layout,
+                       size_t offset,
                        absl::Span<const uint32_t> values) override;
 
   Status PushDescriptorSet(
-      ExecutableLayout* executable_layout, int32_t set,
+      iree_hal_executable_layout_t* executable_layout, int32_t set,
       absl::Span<const iree_hal_descriptor_set_binding_t> bindings) override;
   Status BindDescriptorSet(
-      ExecutableLayout* executable_layout, int32_t set,
-      DescriptorSet* descriptor_set,
+      iree_hal_executable_layout_t* executable_layout, int32_t set,
+      iree_hal_descriptor_set_t* descriptor_set,
       absl::Span<const iree_device_size_t> dynamic_offsets) override;
 
-  Status Dispatch(Executable* executable, int32_t entry_point,
+  Status Dispatch(iree_hal_executable_t* executable, int32_t entry_point,
                   std::array<uint32_t, 3> workgroups) override;
-  Status DispatchIndirect(Executable* executable, int32_t entry_point,
-                          Buffer* workgroups_buffer,
+  Status DispatchIndirect(iree_hal_executable_t* executable,
+                          int32_t entry_point, Buffer* workgroups_buffer,
                           iree_device_size_t workgroups_offset) override;
 
  private:
@@ -135,7 +137,7 @@ class MetalCommandBuffer final : public CommandBuffer {
   id<MTLComputeCommandEncoder> current_compute_encoder_ = nil;
   id<MTLBlitCommandEncoder> current_blit_encoder_ = nil;
 
-  absl::flat_hash_map<ExecutableLayout*, PipelineStateObject>
+  absl::flat_hash_map<iree_hal_executable_layout_t*, PipelineStateObject>
       pipeline_state_objects_;
 };
 

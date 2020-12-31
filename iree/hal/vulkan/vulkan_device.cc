@@ -33,10 +33,11 @@
 #include "iree/hal/vulkan/emulated_timeline_semaphore.h"
 #include "iree/hal/vulkan/extensibility_util.h"
 #include "iree/hal/vulkan/native_descriptor_set.h"
+#include "iree/hal/vulkan/native_descriptor_set_layout.h"
 #include "iree/hal/vulkan/native_event.h"
+#include "iree/hal/vulkan/native_executable_layout.h"
 #include "iree/hal/vulkan/native_timeline_semaphore.h"
-#include "iree/hal/vulkan/pipeline_cache.h"
-#include "iree/hal/vulkan/pipeline_executable_layout.h"
+#include "iree/hal/vulkan/nop_executable_cache.h"
 #include "iree/hal/vulkan/serializing_command_queue.h"
 #include "iree/hal/vulkan/status_util.h"
 #include "iree/hal/vulkan/vma_allocator.h"
@@ -326,9 +327,9 @@ StatusOr<ref_ptr<VulkanDevice>> VulkanDevice::Create(
     device_create_info.pNext = &features2;
   }
 
-  auto logical_device =
-      make_ref<VkDeviceHandle>(syms, enabled_device_extensions,
-                               /*owns_device=*/true, /*allocator=*/nullptr);
+  auto logical_device = make_ref<VkDeviceHandle>(
+      syms, enabled_device_extensions,
+      /*owns_device=*/true, iree_allocator_system(), /*allocator=*/nullptr);
   // The Vulkan loader can leak here, depending on which features are enabled.
   // This is out of our control, so disable leak checks.
   IREE_DISABLE_LEAK_CHECKS();
@@ -434,9 +435,9 @@ StatusOr<ref_ptr<VulkanDevice>> VulkanDevice::Wrap(
       PopulateEnabledDeviceExtensions(enabled_extension_names);
 
   // Wrap the provided VkDevice with a VkDeviceHandle for use within the HAL.
-  auto device_handle =
-      make_ref<VkDeviceHandle>(syms, enabled_device_extensions,
-                               /*owns_device=*/false, /*allocator=*/nullptr);
+  auto device_handle = make_ref<VkDeviceHandle>(
+      syms, enabled_device_extensions,
+      /*owns_device=*/false, iree_allocator_system(), /*allocator=*/nullptr);
   *device_handle->mutable_value() = logical_device;
 
   // Create the device memory allocator.
@@ -552,97 +553,35 @@ VulkanDevice::~VulkanDevice() {
   logical_device_.reset();
 }
 
-ref_ptr<ExecutableCache> VulkanDevice::CreateExecutableCache() {
-  IREE_TRACE_SCOPE0("VulkanDevice::CreateExecutableCache");
-  return make_ref<PipelineCache>(add_ref(logical_device_));
+Status VulkanDevice::CreateExecutableCache(
+    iree_string_view_t identifier,
+    iree_hal_executable_cache_t** out_executable_cache) {
+  return iree_hal_vulkan_nop_executable_cache_create(
+      logical_device_.get(), identifier, out_executable_cache);
 }
 
-StatusOr<ref_ptr<DescriptorSetLayout>> VulkanDevice::CreateDescriptorSetLayout(
+Status VulkanDevice::CreateDescriptorSetLayout(
     iree_hal_descriptor_set_layout_usage_type_t usage_type,
-    absl::Span<const iree_hal_descriptor_set_layout_binding_t> bindings) {
-  IREE_TRACE_SCOPE0("VulkanDevice::CreateDescriptorSetLayout");
-
-  absl::InlinedVector<VkDescriptorSetLayoutBinding, 4> native_bindings(
-      bindings.size());
-  for (int i = 0; i < bindings.size(); ++i) {
-    auto& native_binding = native_bindings[i];
-    native_binding.binding = bindings[i].binding;
-    native_binding.descriptorType =
-        static_cast<VkDescriptorType>(bindings[i].type);
-    native_binding.descriptorCount = 1;
-    native_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    native_binding.pImmutableSamplers = nullptr;
-  }
-
-  VkDescriptorSetLayoutCreateInfo create_info;
-  create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  create_info.pNext = nullptr;
-  create_info.flags = 0;
-  if (usage_type == IREE_HAL_DESCRIPTOR_SET_LAYOUT_USAGE_TYPE_PUSH_ONLY &&
-      logical_device_->enabled_extensions().push_descriptors) {
-    // Note that we can *only* use push descriptor sets if we set this create
-    // flag. If push descriptors aren't supported we emulate them with normal
-    // descriptors so it's fine to have kPushOnly without support.
-    create_info.flags |=
-        VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
-  }
-  create_info.bindingCount = native_bindings.size();
-  create_info.pBindings = native_bindings.data();
-
-  // Create and insert into the cache.
-  VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
-  VK_RETURN_IF_ERROR(syms()->vkCreateDescriptorSetLayout(
-      *logical_device_, &create_info, logical_device_->allocator(),
-      &descriptor_set_layout));
-
-  return make_ref<NativeDescriptorSetLayout>(add_ref(logical_device_),
-                                             descriptor_set_layout);
+    absl::Span<const iree_hal_descriptor_set_layout_binding_t> bindings,
+    iree_hal_descriptor_set_layout_t** out_descriptor_set_layout) {
+  return iree_hal_vulkan_native_descriptor_set_layout_create(
+      logical_device_.get(), usage_type, bindings.size(), bindings.data(),
+      out_descriptor_set_layout);
 }
 
-StatusOr<ref_ptr<ExecutableLayout>> VulkanDevice::CreateExecutableLayout(
-    absl::Span<DescriptorSetLayout* const> set_layouts, size_t push_constants) {
-  IREE_TRACE_SCOPE0("VulkanDevice::CreateExecutableLayout");
-
-  absl::InlinedVector<ref_ptr<NativeDescriptorSetLayout>, 2> typed_set_layouts(
-      set_layouts.size());
-  absl::InlinedVector<VkDescriptorSetLayout, 2> set_layout_handles(
-      set_layouts.size());
-  for (int i = 0; i < set_layouts.size(); ++i) {
-    typed_set_layouts[i] =
-        add_ref(static_cast<NativeDescriptorSetLayout*>(set_layouts[i]));
-    set_layout_handles[i] = typed_set_layouts[i]->handle();
-  }
-
-  absl::InlinedVector<VkPushConstantRange, 1> push_constant_ranges;
-  if (push_constants > 0) {
-    push_constant_ranges.push_back(VkPushConstantRange{
-        VK_SHADER_STAGE_COMPUTE_BIT, 0,
-        static_cast<uint32_t>(sizeof(uint32_t) * push_constants)});
-  }
-
-  VkPipelineLayoutCreateInfo create_info;
-  create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  create_info.pNext = nullptr;
-  create_info.flags = 0;
-  create_info.setLayoutCount = set_layout_handles.size();
-  create_info.pSetLayouts = set_layout_handles.data();
-  create_info.pushConstantRangeCount = push_constant_ranges.size();
-  create_info.pPushConstantRanges = push_constant_ranges.data();
-
-  // Create and insert into the cache.
-  VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
-  VK_RETURN_IF_ERROR(syms()->vkCreatePipelineLayout(
-      *logical_device_, &create_info, logical_device_->allocator(),
-      &pipeline_layout));
-
-  return make_ref<PipelineExecutableLayout>(
-      add_ref(logical_device_), pipeline_layout, std::move(typed_set_layouts));
+Status VulkanDevice::CreateExecutableLayout(
+    absl::Span<iree_hal_descriptor_set_layout_t*> set_layouts,
+    size_t push_constants,
+    iree_hal_executable_layout_t** out_executable_layout) {
+  return iree_hal_vulkan_native_executable_layout_create(
+      logical_device_.get(), set_layouts.size(), set_layouts.data(),
+      push_constants, out_executable_layout);
 }
 
-StatusOr<ref_ptr<DescriptorSet>> VulkanDevice::CreateDescriptorSet(
-    DescriptorSetLayout* set_layout,
-    absl::Span<const iree_hal_descriptor_set_binding_t> bindings) {
-  IREE_TRACE_SCOPE0("VulkanDevice::CreateDescriptorSet");
+Status VulkanDevice::CreateDescriptorSet(
+    iree_hal_descriptor_set_layout_t* set_layout,
+    absl::Span<const iree_hal_descriptor_set_binding_t> bindings,
+    iree_hal_descriptor_set_t** out_descriptor_set) {
   return UnimplementedErrorBuilder(IREE_LOC)
          << "CreateDescriptorSet not yet implemented (needs timeline)";
 }
@@ -650,8 +589,6 @@ StatusOr<ref_ptr<DescriptorSet>> VulkanDevice::CreateDescriptorSet(
 StatusOr<ref_ptr<CommandBuffer>> VulkanDevice::CreateCommandBuffer(
     iree_hal_command_buffer_mode_t mode,
     iree_hal_command_category_t command_categories) {
-  IREE_TRACE_SCOPE0("VulkanDevice::CreateCommandBuffer");
-
   // Select the command pool to used based on the types of commands used.
   // Note that we may not have a dedicated transfer command pool if there are
   // no dedicated transfer queues.
@@ -683,26 +620,12 @@ StatusOr<ref_ptr<CommandBuffer>> VulkanDevice::CreateCommandBuffer(
                                        add_ref(command_pool), command_buffer);
 }
 
-StatusOr<ref_ptr<Event>> VulkanDevice::CreateEvent() {
-  IREE_TRACE_SCOPE0("VulkanDevice::CreateEvent");
-
-  // TODO(b/138729892): pool events.
-  VkEventCreateInfo create_info;
-  create_info.sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO;
-  create_info.pNext = nullptr;
-  create_info.flags = 0;
-  VkEvent event_handle = VK_NULL_HANDLE;
-  VK_RETURN_IF_ERROR(syms()->vkCreateEvent(*logical_device_, &create_info,
-                                           logical_device_->allocator(),
-                                           &event_handle));
-
-  return make_ref<NativeEvent>(add_ref(logical_device_), event_handle);
+Status VulkanDevice::CreateEvent(iree_hal_event_t** out_event) {
+  return iree_hal_vulkan_native_event_create(logical_device_.get(), out_event);
 }
 
-StatusOr<ref_ptr<Semaphore>> VulkanDevice::CreateSemaphore(
-    uint64_t initial_value) {
-  IREE_TRACE_SCOPE0("VulkanDevice::CreateSemaphore");
-
+Status VulkanDevice::CreateSemaphore(uint64_t initial_value,
+                                     iree_hal_semaphore_t** out_semaphore) {
   if (emulating_timeline_semaphores()) {
     return EmulatedTimelineSemaphore::Create(
         add_ref(logical_device_),
@@ -742,67 +665,64 @@ StatusOr<ref_ptr<Semaphore>> VulkanDevice::CreateSemaphore(
         add_ref(semaphore_pool_), initial_value);
   }
 
-  return NativeTimelineSemaphore::Create(add_ref(logical_device_),
-                                         initial_value);
+  return iree_hal_vulkan_native_semaphore_create(logical_device_.get(),
+                                                 initial_value, out_semaphore);
 }
 
 Status VulkanDevice::WaitAllSemaphores(
-    absl::Span<const SemaphoreValue> semaphores, Time deadline_ns) {
-  IREE_TRACE_SCOPE0("VulkanDevice::WaitAllSemaphores");
-  return WaitSemaphores(semaphores, deadline_ns, /*wait_flags=*/0);
+    const iree_hal_semaphore_list_t* semaphore_list, iree_time_t deadline_ns) {
+  return WaitSemaphores(semaphore_list, deadline_ns, /*wait_flags=*/0);
 }
 
 StatusOr<int> VulkanDevice::WaitAnySemaphore(
-    absl::Span<const SemaphoreValue> semaphores, Time deadline_ns) {
-  IREE_TRACE_SCOPE0("VulkanDevice::WaitAnySemaphore");
-  return WaitSemaphores(semaphores, deadline_ns,
+    const iree_hal_semaphore_list_t* semaphore_list, iree_time_t deadline_ns) {
+  return WaitSemaphores(semaphore_list, deadline_ns,
                         /*wait_flags=*/VK_SEMAPHORE_WAIT_ANY_BIT);
 }
 
-Status VulkanDevice::WaitSemaphores(absl::Span<const SemaphoreValue> semaphores,
-                                    Time deadline_ns,
-                                    VkSemaphoreWaitFlags wait_flags) {
-  IREE_TRACE_SCOPE0("VulkanDevice::WaitSemaphores");
-
+Status VulkanDevice::WaitSemaphores(
+    const iree_hal_semaphore_list_t* semaphore_list, iree_time_t deadline_ns,
+    VkSemaphoreWaitFlags wait_flags) {
   if (emulating_timeline_semaphores()) {
     // TODO(antiagainst): We actually should get the fences associated with the
     // emulated timeline semaphores so that we can wait them in a bunch. This
     // implementation is problematic if we wait to wait any and we have the
     // first semaphore taking extra long time but the following ones signal
     // quickly.
-    for (int i = 0; i < semaphores.size(); ++i) {
-      auto* semaphore =
-          static_cast<EmulatedTimelineSemaphore*>(semaphores[i].semaphore);
-      IREE_RETURN_IF_ERROR(semaphore->Wait(semaphores[i].value, deadline_ns));
+    for (iree_host_size_t i = 0; i < semaphore_list->count; ++i) {
+      auto* semaphore = static_cast<EmulatedTimelineSemaphore*>(
+          semaphore_list->semaphores[i]);
+      IREE_RETURN_IF_ERROR(
+          semaphore->Wait(semaphore_list->payload_values[i], deadline_ns));
       if (wait_flags & VK_SEMAPHORE_WAIT_ANY_BIT) return OkStatus();
     }
 
     return OkStatus();
   }
 
-  absl::InlinedVector<VkSemaphore, 4> semaphore_handles(semaphores.size());
-  absl::InlinedVector<uint64_t, 4> semaphore_values(semaphores.size());
-  for (int i = 0; i < semaphores.size(); ++i) {
+  absl::InlinedVector<VkSemaphore, 4> semaphore_handles(semaphore_list->count);
+  for (iree_host_size_t i = 0; i < semaphore_list->count; ++i) {
     semaphore_handles[i] =
-        static_cast<NativeTimelineSemaphore*>(semaphores[i].semaphore)
-            ->handle();
-    semaphore_values[i] = semaphores[i].value;
+        iree_hal_vulkan_native_semaphore_handle(semaphore_list->semaphores[i]);
   }
 
   VkSemaphoreWaitInfo wait_info;
   wait_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
   wait_info.pNext = nullptr;
   wait_info.flags = wait_flags;
-  wait_info.semaphoreCount = semaphore_handles.size();
+  wait_info.semaphoreCount = semaphore_list->count;
   wait_info.pSemaphores = semaphore_handles.data();
-  wait_info.pValues = semaphore_values.data();
+  wait_info.pValues = semaphore_list->payload_values;
+  static_assert(
+      sizeof(wait_info.pValues[0]) == sizeof(semaphore_list->payload_values[0]),
+      "payload value type must match vulkan expected size");
 
   // NOTE: this may fail with a timeout (VK_TIMEOUT) or in the case of a
   // device loss event may return either VK_SUCCESS *or* VK_ERROR_DEVICE_LOST.
   // We may want to explicitly query for device loss after a successful wait
   // to ensure we consistently return errors.
   uint64_t timeout_ns =
-      static_cast<uint64_t>(DeadlineToRelativeTimeoutNanos(deadline_ns));
+      static_cast<uint64_t>(iree_absolute_deadline_to_timeout_ns(deadline_ns));
   VkResult result =
       syms()->vkWaitSemaphores(*logical_device_, &wait_info, timeout_ns);
   if (result == VK_ERROR_DEVICE_LOST) {
@@ -816,16 +736,13 @@ Status VulkanDevice::WaitSemaphores(absl::Span<const SemaphoreValue> semaphores,
   return OkStatus();
 }
 
-Status VulkanDevice::WaitIdle(Time deadline_ns) {
-  if (deadline_ns == InfiniteFuture()) {
+Status VulkanDevice::WaitIdle(iree_time_t deadline_ns) {
+  if (deadline_ns == IREE_TIME_INFINITE_FUTURE) {
     // Fast path for using vkDeviceWaitIdle, which is usually cheaper (as it
     // requires fewer calls into the driver).
-    IREE_TRACE_SCOPE0("VulkanDevice::WaitIdle#vkDeviceWaitIdle");
     VK_RETURN_IF_ERROR(syms()->vkDeviceWaitIdle(*logical_device_));
     return OkStatus();
   }
-
-  IREE_TRACE_SCOPE0("VulkanDevice::WaitIdle#Semaphores");
   for (auto& command_queue : command_queues_) {
     IREE_RETURN_IF_ERROR(command_queue->WaitIdle(deadline_ns));
   }

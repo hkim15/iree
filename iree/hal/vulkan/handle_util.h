@@ -42,11 +42,13 @@ class VkDeviceHandle : public RefObject<VkDeviceHandle> {
  public:
   VkDeviceHandle(const ref_ptr<DynamicSymbols>& syms,
                  DeviceExtensions enabled_extensions, bool owns_device,
+                 iree_allocator_t host_allocator,
                  const VkAllocationCallbacks* allocator = nullptr)
       : syms_(add_ref(syms)),
         enabled_extensions_(enabled_extensions),
         owns_device_(owns_device),
-        allocator_(allocator) {}
+        allocator_(allocator),
+        host_allocator_(host_allocator) {}
   ~VkDeviceHandle() { reset(); }
 
   VkDeviceHandle(const VkDeviceHandle&) = delete;
@@ -57,7 +59,8 @@ class VkDeviceHandle : public RefObject<VkDeviceHandle> {
         syms_(std::move(other.syms_)),
         enabled_extensions_(other.enabled_extensions_),
         owns_device_(other.owns_device_),
-        allocator_(other.allocator_) {}
+        allocator_(other.allocator_),
+        host_allocator_(other.host_allocator_) {}
 
   void reset() {
     if (value_ == VK_NULL_HANDLE) return;
@@ -73,6 +76,7 @@ class VkDeviceHandle : public RefObject<VkDeviceHandle> {
 
   const ref_ptr<DynamicSymbols>& syms() const noexcept { return syms_; }
   const VkAllocationCallbacks* allocator() const noexcept { return allocator_; }
+  iree_allocator_t host_allocator() const noexcept { return host_allocator_; }
 
   const DeviceExtensions& enabled_extensions() const {
     return enabled_extensions_;
@@ -84,6 +88,7 @@ class VkDeviceHandle : public RefObject<VkDeviceHandle> {
   DeviceExtensions enabled_extensions_;
   bool owns_device_;
   const VkAllocationCallbacks* allocator_ = nullptr;
+  iree_allocator_t host_allocator_;
 };
 
 class VkCommandPoolHandle : public RefObject<VkCommandPoolHandle> {

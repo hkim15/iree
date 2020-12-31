@@ -48,12 +48,12 @@ class DirectCommandQueue final : public CommandQueue {
     return logical_device_->syms();
   }
 
-  Status Submit(absl::Span<const SubmissionBatch> batches) override;
+  Status Submit(absl::Span<const iree_hal_submission_batch_t> batches) override;
 
   Status WaitIdle(Time deadline_ns) override;
 
  private:
-  Status TranslateBatchInfo(const SubmissionBatch& batch,
+  Status TranslateBatchInfo(const iree_hal_submission_batch_t* batch,
                             VkSubmitInfo* submit_info,
                             VkTimelineSemaphoreSubmitInfo* timeline_submit_info,
                             Arena* arena);

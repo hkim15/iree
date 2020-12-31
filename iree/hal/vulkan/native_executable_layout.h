@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef IREE_HAL_VULKAN_NATIVE_DESCRIPTOR_SET_H_
-#define IREE_HAL_VULKAN_NATIVE_DESCRIPTOR_SET_H_
+#ifndef IREE_HAL_VULKAN_NATIVE_EXECUTABLE_LAYOUT_H_
+#define IREE_HAL_VULKAN_NATIVE_EXECUTABLE_LAYOUT_H_
 
 // clang-format off: Must be included before all other headers:
 #include "iree/hal/vulkan/vulkan_headers.h"
@@ -26,15 +26,24 @@
 extern "C" {
 #endif  // __cplusplus
 
-iree_status_t iree_hal_vulkan_native_descriptor_set_create(
-    iree::hal::vulkan::VkDeviceHandle* logical_device, VkDescriptorSet handle,
-    iree_hal_descriptor_set_t** out_descriptor_set);
+iree_status_t iree_hal_vulkan_native_executable_layout_create(
+    iree::hal::vulkan::VkDeviceHandle* logical_device,
+    iree_host_size_t set_layout_count,
+    iree_hal_descriptor_set_layout_t** set_layouts,
+    iree_host_size_t push_constant_count,
+    iree_hal_executable_layout_t** out_executable_layout);
 
-VkDescriptorSet iree_hal_vulkan_native_descriptor_set_handle(
-    iree_hal_descriptor_set_t* base_descriptor_set);
+VkPipelineLayout iree_hal_vulkan_native_executable_layout_handle(
+    iree_hal_executable_layout_t* base_executable_layout);
+
+iree_host_size_t iree_hal_vulkan_native_executable_layout_set_count(
+    iree_hal_executable_layout_t* base_executable_layout);
+
+iree_hal_descriptor_set_layout_t* iree_hal_vulkan_native_executable_layout_set(
+    iree_hal_executable_layout_t* base_executable_layout, iree_host_size_t i);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif  // IREE_HAL_VULKAN_NATIVE_DESCRIPTOR_SET_H_
+#endif  // IREE_HAL_VULKAN_NATIVE_EXECUTABLE_LAYOUT_H_

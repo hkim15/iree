@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef IREE_HAL_VULKAN_NATIVE_TIMELINE_SEMAPHORE_H_
-#define IREE_HAL_VULKAN_NATIVE_TIMELINE_SEMAPHORE_H_
+#ifndef IREE_HAL_VULKAN_NOP_EXECUTABLE_CACHE_H_
+#define IREE_HAL_VULKAN_NOP_EXECUTABLE_CACHE_H_
 
 // clang-format off: Must be included before all other headers:
 #include "iree/hal/vulkan/vulkan_headers.h"
@@ -22,11 +22,9 @@
 #include "iree/hal/api.h"
 #include "iree/hal/vulkan/handle_util.h"
 
-iree_status_t iree_hal_vulkan_native_semaphore_create(
-    iree::hal::vulkan::VkDeviceHandle* logical_device, uint64_t initial_value,
-    iree_hal_semaphore_t** out_semaphore);
+iree_status_t iree_hal_vulkan_nop_executable_cache_create(
+    iree::hal::vulkan::VkDeviceHandle* logical_device,
+    iree_string_view_t identifier,
+    iree_hal_executable_cache_t** out_executable_cache);
 
-VkSemaphore iree_hal_vulkan_native_semaphore_handle(
-    iree_hal_semaphore_t* semaphore);
-
-#endif  // IREE_HAL_VULKAN_NATIVE_TIMELINE_SEMAPHORE_H_
+#endif  // IREE_HAL_VULKAN_NOP_EXECUTABLE_CACHE_H_

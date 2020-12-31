@@ -41,7 +41,7 @@ DirectCommandQueue::~DirectCommandQueue() {
 }
 
 Status DirectCommandQueue::TranslateBatchInfo(
-    const SubmissionBatch& batch, VkSubmitInfo* submit_info,
+    const iree_hal_submission_batch_t* batch, VkSubmitInfo* submit_info,
     VkTimelineSemaphoreSubmitInfo* timeline_submit_info, Arena* arena) {
   // TODO(benvanik): see if we can go to finer-grained stages.
   // For example, if this was just queue ownership transfers then we can use
@@ -57,9 +57,8 @@ Status DirectCommandQueue::TranslateBatchInfo(
       arena->AllocateSpan<VkPipelineStageFlags>(batch.wait_semaphores.size());
   for (int i = 0; i < batch.wait_semaphores.size(); ++i) {
     const auto& wait_point = batch.wait_semaphores[i];
-    const auto* semaphore =
-        static_cast<NativeTimelineSemaphore*>(wait_point.semaphore);
-    wait_semaphore_handles[i] = semaphore->handle();
+    wait_semaphore_handles[i] =
+        iree_hal_vulkan_native_semaphore_handle(wait_point.semaphore);
     wait_semaphore_values[i] = wait_point.value;
     wait_dst_stage_masks[i] = dst_stage_mask;
   }
@@ -70,9 +69,8 @@ Status DirectCommandQueue::TranslateBatchInfo(
       arena->AllocateSpan<uint64_t>(batch.signal_semaphores.size());
   for (int i = 0; i < batch.signal_semaphores.size(); ++i) {
     const auto& signal_point = batch.signal_semaphores[i];
-    const auto* semaphore =
-        static_cast<NativeTimelineSemaphore*>(signal_point.semaphore);
-    signal_semaphore_handles[i] = semaphore->handle();
+    signal_semaphore_handles[i] =
+        iree_hal_vulkan_native_semaphore_handle(signal_point.semaphore);
     signal_semaphore_values[i] = signal_point.value;
   }
 
@@ -111,7 +109,8 @@ Status DirectCommandQueue::TranslateBatchInfo(
   return OkStatus();
 }
 
-Status DirectCommandQueue::Submit(absl::Span<const SubmissionBatch> batches) {
+Status DirectCommandQueue::Submit(
+    absl::Span<const iree_hal_submission_batch_t> batches) {
   IREE_TRACE_SCOPE0("DirectCommandQueue::Submit");
 
   // Map the submission batches to VkSubmitInfos.

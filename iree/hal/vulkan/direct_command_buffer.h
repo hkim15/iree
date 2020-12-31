@@ -26,8 +26,7 @@
 #include "iree/hal/vulkan/handle_util.h"
 #include "iree/hal/vulkan/native_descriptor_set.h"
 #include "iree/hal/vulkan/native_event.h"
-#include "iree/hal/vulkan/pipeline_executable.h"
-#include "iree/hal/vulkan/pipeline_executable_layout.h"
+#include "iree/hal/vulkan/native_executable_layout.h"
 #include "iree/hal/vulkan/vma_buffer.h"
 
 namespace iree {
@@ -56,12 +55,13 @@ class DirectCommandBuffer final : public CommandBuffer {
       iree_hal_execution_stage_t target_stage_mask,
       absl::Span<const iree_hal_memory_barrier_t> memory_barriers,
       absl::Span<const iree_hal_buffer_barrier_t> buffer_barriers) override;
-  Status SignalEvent(Event* event,
+  Status SignalEvent(iree_hal_event_t* event,
                      iree_hal_execution_stage_t source_stage_mask) override;
-  Status ResetEvent(Event* event,
+  Status ResetEvent(iree_hal_event_t* event,
                     iree_hal_execution_stage_t source_stage_mask) override;
   Status WaitEvents(
-      absl::Span<Event*> events, iree_hal_execution_stage_t source_stage_mask,
+      absl::Span<iree_hal_event_t*> events,
+      iree_hal_execution_stage_t source_stage_mask,
       iree_hal_execution_stage_t target_stage_mask,
       absl::Span<const iree_hal_memory_barrier_t> memory_barriers,
       absl::Span<const iree_hal_buffer_barrier_t> buffer_barriers) override;
@@ -78,34 +78,29 @@ class DirectCommandBuffer final : public CommandBuffer {
                     Buffer* target_buffer, iree_device_size_t target_offset,
                     iree_device_size_t length) override;
 
-  Status PushConstants(ExecutableLayout* executable_layout, size_t offset,
+  Status PushConstants(iree_hal_executable_layout_t* executable_layout,
+                       size_t offset,
                        absl::Span<const uint32_t> values) override;
 
   Status PushDescriptorSet(
-      ExecutableLayout* executable_layout, int32_t set,
+      iree_hal_executable_layout_t* executable_layout, int32_t set,
       absl::Span<const iree_hal_descriptor_set_binding_t> bindings) override;
   Status BindDescriptorSet(
-      ExecutableLayout* executable_layout, int32_t set,
-      DescriptorSet* descriptor_set,
+      iree_hal_executable_layout_t* executable_layout, int32_t set,
+      iree_hal_descriptor_set_t* descriptor_set,
       absl::Span<const iree_device_size_t> dynamic_offsets) override;
 
-  Status Dispatch(Executable* executable, int32_t entry_point,
+  Status Dispatch(iree_hal_executable_t* executable, int32_t entry_point,
                   std::array<uint32_t, 3> workgroups) override;
-  Status DispatchIndirect(Executable* executable, int32_t entry_point,
-                          Buffer* workgroups_buffer,
+  Status DispatchIndirect(iree_hal_executable_t* executable,
+                          int32_t entry_point, Buffer* workgroups_buffer,
                           iree_device_size_t workgroups_offset) override;
 
  private:
   const ref_ptr<DynamicSymbols>& syms() const { return command_pool_->syms(); }
 
-  StatusOr<NativeEvent*> CastEvent(Event* event) const;
   StatusOr<VmaBuffer*> CastBuffer(Buffer* buffer) const;
   StatusOr<VmaBuffer*> CastBuffer(iree_hal_buffer_t* buffer) const;
-  StatusOr<NativeDescriptorSet*> CastDescriptorSet(
-      DescriptorSet* descriptor_set) const;
-  StatusOr<PipelineExecutableLayout*> CastExecutableLayout(
-      ExecutableLayout* executable_layout) const;
-  StatusOr<PipelineExecutable*> CastExecutable(Executable* executable) const;
 
   bool is_recording_ = false;
   ref_ptr<VkCommandPoolHandle> command_pool_;

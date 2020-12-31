@@ -21,6 +21,38 @@ namespace iree {
 namespace hal {
 namespace vulkan {
 
+// A timeline semaphore implemented using the native VkSemaphore type.
+// This may require emulation pre-Vulkan 1.2 when timeline semaphores were only
+// an extension.
+class NativeTimelineSemaphore final : public Semaphore {
+ public:
+  // Creates a timeline semaphore with the given |initial_value|.
+  static StatusOr<ref_ptr<Semaphore>> Create(
+      ref_ptr<VkDeviceHandle> logical_device, uint64_t initial_value);
+
+  NativeTimelineSemaphore(ref_ptr<VkDeviceHandle> logical_device,
+                          VkSemaphore handle, uint64_t initial_value);
+  ~NativeTimelineSemaphore() override;
+
+  VkSemaphore handle() const { return handle_; }
+
+  StatusOr<uint64_t> Query() override;
+
+  Status Signal(uint64_t value) override;
+  void Fail(Status status) override;
+  Status Wait(uint64_t value, Time deadline_ns) override;
+
+ private:
+  ref_ptr<VkDeviceHandle> logical_device_;
+  VkSemaphore handle_;
+
+  // NOTE: the Vulkan semaphore is the source of truth. We only need to access
+  // this status (and thus take the lock) when we want to either signal failure
+  // or query the status in the case of the semaphore being set to UINT64_MAX.
+  mutable absl::Mutex status_mutex_;
+  Status status_ ABSL_GUARDED_BY(status_mutex_);
+};
+
 // static
 StatusOr<ref_ptr<Semaphore>> NativeTimelineSemaphore::Create(
     ref_ptr<VkDeviceHandle> logical_device, uint64_t initial_value) {

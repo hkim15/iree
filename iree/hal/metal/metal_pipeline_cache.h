@@ -17,7 +17,6 @@
 
 #import <Metal/Metal.h>
 
-#include "iree/hal/cc/executable.h"
 #include "iree/hal/cc/executable_cache.h"
 
 namespace iree {

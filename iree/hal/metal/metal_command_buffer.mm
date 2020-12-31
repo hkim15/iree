@@ -155,17 +155,17 @@ Status MetalCommandBuffer::ExecutionBarrier(iree_hal_execution_stage_t source_st
   return OkStatus();
 }
 
-Status MetalCommandBuffer::SignalEvent(Event* event, iree_hal_execution_stage_t source_stage_mask) {
+Status MetalCommandBuffer::SignalEvent(iree_hal_event_t* event, iree_hal_execution_stage_t source_stage_mask) {
   IREE_TRACE_SCOPE0("MetalCommandBuffer::SignalEvent");
   return UnimplementedErrorBuilder(IREE_LOC) << "MetalCommandBuffer::SignalEvent";
 }
 
-Status MetalCommandBuffer::ResetEvent(Event* event, iree_hal_execution_stage_t source_stage_mask) {
+Status MetalCommandBuffer::ResetEvent(iree_hal_event_t* event, iree_hal_execution_stage_t source_stage_mask) {
   IREE_TRACE_SCOPE0("MetalCommandBuffer::ResetEvent");
   return UnimplementedErrorBuilder(IREE_LOC) << "MetalCommandBuffer::ResetEvent";
 }
 
-Status MetalCommandBuffer::WaitEvents(absl::Span<Event*> events,
+Status MetalCommandBuffer::WaitEvents(absl::Span<iree_hal_event_t*> events,
                                       iree_hal_execution_stage_t source_stage_mask,
                                       iree_hal_execution_stage_t target_stage_mask,
                                       absl::Span<const iree_hal_memory_barrier_t> memory_barriers,
@@ -248,13 +248,13 @@ Status MetalCommandBuffer::CopyBuffer(Buffer* source_buffer, iree_device_size_t 
   return OkStatus();
 }
 
-Status MetalCommandBuffer::PushConstants(ExecutableLayout* executable_layout, size_t offset,
+Status MetalCommandBuffer::PushConstants(iree_hal_executable_layout_t* executable_layout, size_t offset,
                                          absl::Span<const uint32_t> values) {
   IREE_TRACE_SCOPE0("MetalCommandBuffer::PushConstants");
   return UnimplementedErrorBuilder(IREE_LOC) << "MetalCommandBuffer::PushConstants";
 }
 
-Status MetalCommandBuffer::PushDescriptorSet(ExecutableLayout* executable_layout, int32_t set,
+Status MetalCommandBuffer::PushDescriptorSet(iree_hal_executable_layout_t* executable_layout, int32_t set,
                                              absl::Span<const iree_hal_descriptor_set_binding_t> bindings) {
   IREE_TRACE_SCOPE0("MetalCommandBuffer::PushDescriptorSet");
   if (set != 0) {
@@ -266,8 +266,8 @@ Status MetalCommandBuffer::PushDescriptorSet(ExecutableLayout* executable_layout
   return OkStatus();
 }
 
-Status MetalCommandBuffer::BindDescriptorSet(ExecutableLayout* executable_layout, int32_t set,
-                                             DescriptorSet* descriptor_set,
+Status MetalCommandBuffer::BindDescriptorSet(iree_hal_executable_layout_t* executable_layout, int32_t set,
+                                             iree_hal_descriptor_set_t* descriptor_set,
                                              absl::Span<const iree_device_size_t> dynamic_offsets) {
   IREE_TRACE_SCOPE0("MetalCommandBuffer::BindDescriptorSet");
   if (set != 0) {
@@ -282,7 +282,7 @@ Status MetalCommandBuffer::BindDescriptorSet(ExecutableLayout* executable_layout
   return OkStatus();
 }
 
-Status MetalCommandBuffer::Dispatch(Executable* executable, int32_t entry_point,
+Status MetalCommandBuffer::Dispatch(iree_hal_executable_t* executable, int32_t entry_point,
                                     std::array<uint32_t, 3> workgroups) {
   IREE_TRACE_SCOPE0("MetalCommandBuffer::Dispatch");
   IREE_DVLOG(2) << "MetalCommandBuffer::Dispatch";
@@ -381,7 +381,7 @@ Status MetalCommandBuffer::Dispatch(Executable* executable, int32_t entry_point,
   return OkStatus();
 }
 
-Status MetalCommandBuffer::DispatchIndirect(Executable* executable, int32_t entry_point,
+Status MetalCommandBuffer::DispatchIndirect(iree_hal_executable_t* executable, int32_t entry_point,
                                             Buffer* workgroups_buffer,
                                             iree_device_size_t workgroups_offset) {
   IREE_TRACE_SCOPE0("MetalCommandBuffer::DispatchIndirect");
